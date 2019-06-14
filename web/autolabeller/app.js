@@ -180,6 +180,8 @@ io.on("connection", (socket) => {
 	console.log("user " + socket.id + " connected !");
 	let data_for_voter = {};
 	let binaries = {};
+	let timeout = 10;
+	let has_requested = false;
 
 	if (server_ready) {
 		getCsv((csv_data, b) => {
@@ -187,6 +189,7 @@ io.on("connection", (socket) => {
 				data_is_ready = true;
 				binaries = audio_binaries;
 				socket.emit('audio', binaries, data_for_voter);
+				has_requested = true;
 			});
 			data_for_voter = csv_data;
 		});
@@ -201,6 +204,7 @@ io.on("connection", (socket) => {
 					data_is_ready = true;
 					binaries = audio_binaries;
 					socket.emit('audio', binaries, data_for_voter);
+					has_requested = true;
 				});
 				data_for_voter = csv_data;
 			});
@@ -218,16 +222,26 @@ io.on("connection", (socket) => {
 	});
 
 	socket.on("request_new_data", () => {
-		upload_csv(data, () => {
-			getCsv((csv_data, b) => {
-				getAudioFiles(csv_data, (audio_binaries) => {
-					data_is_ready = true;
-					binaries = audio_binaries;
-					socket.emit('audio', binaries, data_for_voter);
+		if (!has_requested) {
+			upload_csv(data, () => {
+				getCsv((csv_data, b) => {
+					getAudioFiles(csv_data, (audio_binaries) => {
+						data_is_ready = true;
+						binaries = audio_binaries;
+						socket.emit('audio', binaries, data_for_voter);
+						has_requested = true;
+					});
+					data_for_voter = csv_data;
 				});
-				data_for_voter = csv_data;
 			});
-		});
+		} else {
+			console.log('user timed out');
+			socket.emit('timeout', timeout);
+			setTimeout(() => {
+				has_requested = false;
+			}, timeout);
+
+		}
 	});
 
 	socket.on('disconnect', () => {
@@ -236,4 +250,7 @@ io.on("connection", (socket) => {
 		});
 	});
 
+	setTimeout(() => {
+		has_requested = false;
+	}, timeout);
 });
