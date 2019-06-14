@@ -30,6 +30,8 @@ app.get("/", (req, res) => {
 let data = {};
 let server_ready = false;
 
+
+//Start server
 server.listen(app.get("port"), () => {
 	console.log("express started at port: ", app.get("port"));
 	getCsv((a, fulldata) => {
@@ -38,9 +40,15 @@ server.listen(app.get("port"), () => {
 		server_ready = true;
 
 	});
+
+	setInterval(()=>{
+		upload_csv(data, () => {
+			console.log('data uploaded');
+		});
+	}, 5*1000*60);
 });
 
-
+//Read csv file downloaded and get 10 audio files and the whole state of csvfile
 function readCsv(nb_sounds, callback) {
 	let csv_data = {};
 	let names = new Array();
@@ -49,6 +57,7 @@ function readCsv(nb_sounds, callback) {
 		.pipe(csv({
 			separator: ';'
 		}))
+		//Read every line
 		.on('data', function (data) {
 			try {
 				isFootsteps = parseInt(data[' footsteps']);
@@ -89,6 +98,7 @@ async function asyncForEach(array, callback) {
 	}
 }
 
+//Download from dropbox the audiofiles
 function getAudioFiles(csv_data, callback) {
 	var dbx = new Dropbox({
 		accessToken: process.env.DROPBOX_API_TOKEN
@@ -121,6 +131,7 @@ function getAudioFiles(csv_data, callback) {
 	start();
 }
 
+//Download csv file from Dropbox
 function getCsv(callback) {
 	var dbx = new Dropbox({
 		accessToken: process.env.DROPBOX_API_TOKEN
@@ -148,6 +159,7 @@ function getCsv(callback) {
 		});
 }
 
+//Upload to Dropbox the csv file
 function upload_csv(csv_data, callback) {
 	var dbx = new Dropbox({
 		accessToken: process.env.DROPBOX_API_TOKEN
