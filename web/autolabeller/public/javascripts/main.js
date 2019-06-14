@@ -48,29 +48,33 @@ $(document).ready(() => {
 		}
 	});
 
-	socket.on('wait', ()=>{
-		setTimeout(()=>{
+	socket.on('wait', () => {
+		setTimeout(() => {
 			socket.emit('areurdy');
 		}, 2);
+	});
+
+	socket.on('timeout', (n) => {
+		alert('you have been timed out, don\'t spam the request button ! Try again in ' + parseInt(n) + ' seconds !');
 	});
 
 	$('body').on('click', 'button.yesBtn', (event) => {
 		name = event.target.id.split('butyes')[1] + '.wav';
 		let id = event.target.id;
-		$('#'+id).parent().remove();
+		$('#' + id).parent().remove();
 		socket.emit('vote+', name);
-		
+
 	});
 
 	$('body').on('click', 'button.noBtn', (event) => {
 		let name = event.target.id.split('butno')[1] + '.wav';
 		let id = event.target.id;
-		$('#'+id).parent().remove();
+		$('#' + id).parent().remove();
 		socket.emit('vote-', name);
 
 	});
 
-	$('#req').on('click', (event)=>{
+	$('#req').on('click', (event) => {
 		socket.emit('request_new_data');
 		$('#main').empty();
 		$('#main').append('<h1>Loading some audio please wait</h1>');
