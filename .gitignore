@@ -1,0 +1,5 @@
+web/autolabeller/.env
+data/*
+web/autolabeller/node_modules/*
+web/autolabeller/labels.csv
+.vscode/*
