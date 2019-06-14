@@ -177,25 +177,25 @@ function upload_csv(csv_data, callback) {
 }
 
 let users_requests = {}
+const timeout = 10;
 
 io.on("connection", (socket) => {
 	console.log("user " + socket.id + " connected !");
 
 	users_requests[socket.id] = {
-		'has_requested': false
+		'has_requested': true
 	};
 
 	let data_for_voter = {};
 	let binaries = {};
-	let timeout = 10;
 
 	if (server_ready) {
+		users_requests[socket.id].has_requested = true;
 		getCsv((csv_data, b) => {
 			getAudioFiles(csv_data, (audio_binaries) => {
 				data_is_ready = true;
 				binaries = audio_binaries;
 				socket.emit('audio', binaries, data_for_voter);
-				users_requests[socket.id].has_requested = true;
 			});
 			data_for_voter = csv_data;
 		});
@@ -205,12 +205,12 @@ io.on("connection", (socket) => {
 
 	socket.on('areurdy', () => {
 		if (server_ready) {
+			users_requests[socket.id].has_requested = true;
 			getCsv((csv_data, b) => {
 				getAudioFiles(csv_data, (audio_binaries) => {
 					data_is_ready = true;
 					binaries = audio_binaries;
 					socket.emit('audio', binaries, data_for_voter);
-					users_requests[socket.id].has_requested = true;
 				});
 				data_for_voter = csv_data;
 			});
@@ -228,26 +228,31 @@ io.on("connection", (socket) => {
 	});
 
 	socket.on("request_new_data", () => {
+		console.log(users_requests[socket.id].has_requested);
+
 		if (!users_requests[socket.id].has_requested) {
+			users_requests[socket.id].has_requested = true;
 			upload_csv(data, () => {
 				getCsv((csv_data, b) => {
 					getAudioFiles(csv_data, (audio_binaries) => {
 						data_is_ready = true;
 						binaries = audio_binaries;
 						socket.emit('audio', binaries, data_for_voter);
-						users_requests[socket.id].has_requested = true;
 					});
 					data_for_voter = csv_data;
 				});
 			});
+			setTimeout(() => {
+				users_requests[socket.id].has_requested = false;
+			}, timeout * 1000);
 		} else {
 			console.log('user timed out');
 			socket.emit('timeout', timeout);
-			setTimeout(() => {
-				users_requests[socket.id].has_requested = false;
-			}, timeout);
-
 		}
+	});
+
+	socket.on('apologize', () => {
+		users_requests[socket.id].has_requested = false;
 	});
 
 	socket.on('disconnect', () => {

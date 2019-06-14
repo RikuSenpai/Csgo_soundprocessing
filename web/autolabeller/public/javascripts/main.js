@@ -56,6 +56,12 @@ $(document).ready(() => {
 
 	socket.on('timeout', (n) => {
 		alert('you have been timed out, don\'t spam the request button ! Try again in ' + parseInt(n) + ' seconds !');
+		setTimeout(()=>{
+			socket.emit('apologize');
+			$('#req').prop('disabled', false);
+		}, n*1000);
+
+		$('#req').prop('disabled', true);
 	});
 
 	$('body').on('click', 'button.yesBtn', (event) => {
