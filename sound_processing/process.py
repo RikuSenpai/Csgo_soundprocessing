@@ -57,6 +57,7 @@ class SoundProcessor(object):
 		stream.close()
 
 	def spectrograms_to_data(self, spectrograms: list):
+		#not tested
 		dim1 = len(spectrograms)
 
 		tmp = spectrograms[0].reshape(1, -1)
