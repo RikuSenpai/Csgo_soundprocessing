@@ -37,7 +37,9 @@ $(document).ready(() => {
 	RefreshSomeEventListener();
 	var socket = io();
 
-	$('h1').text('Loading some audio please wait')
+	socket.on('loading', ()=>{
+		$('h1').text('Loading some audio please wait');
+	})
 
 	socket.on('audio', (audio_binaries, csv_data) => {
 		vote = csv_data;
@@ -60,8 +62,13 @@ $(document).ready(() => {
 			socket.emit('apologize');
 			$('#req').prop('disabled', false);
 		}, n*1000);
-
+		$('h1').text('AutoLabeller (timed out)');
 		$('#req').prop('disabled', true);
+	});
+
+	socket.on('clearscr', ()=>{
+		$('#main').empty();
+		$('#main').append('<h1>AutoLabeller</h1>');
 	});
 
 	$('body').on('click', 'button.yesBtn', (event) => {

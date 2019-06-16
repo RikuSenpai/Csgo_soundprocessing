@@ -5,7 +5,7 @@ const fs = require('fs');
 const csv = require('csv-parser');
 const Dropbox = require('dropbox').Dropbox;
 require('dotenv').config();
-require('isomorphic-fetch'); // or another library of choice.
+const fetch = require('isomorphic-fetch'); // or another library of choice.
 
 let app = express();
 const server = require("http").Server(app);
@@ -41,11 +41,11 @@ server.listen(app.get("port"), () => {
 
 	});
 
-	setInterval(()=>{
+	setInterval(() => {
 		upload_csv(data, () => {
 			console.log('data uploaded');
 		});
-	}, 5*1000*60);
+	}, 5 * 1000 * 60);
 });
 
 //Read csv file downloaded and get 10 audio files and the whole state of csvfile
@@ -63,12 +63,12 @@ function readCsv(nb_sounds, callback) {
 				isFootsteps = parseInt(data[' footsteps']);
 				isNotFootsteps = parseInt(data[' no'])
 
-
+				csv_data[data.filename] = {
+					yes: isFootsteps,
+					no: isNotFootsteps
+				};
 				if (Math.abs(isFootsteps - isNotFootsteps) < 3) {
-					csv_data[data.filename] = {
-						yes: isFootsteps,
-						no: isNotFootsteps
-					};
+
 					names.push(data.filename);
 				}
 
@@ -101,7 +101,8 @@ async function asyncForEach(array, callback) {
 //Download from dropbox the audiofiles
 function getAudioFiles(csv_data, callback) {
 	var dbx = new Dropbox({
-		accessToken: process.env.DROPBOX_API_TOKEN
+		accessToken: process.env.DROPBOX_API_TOKEN,
+		fetch: fetch
 	});
 
 	files = Object.keys(csv_data);
@@ -134,7 +135,8 @@ function getAudioFiles(csv_data, callback) {
 //Download csv file from Dropbox
 function getCsv(callback) {
 	var dbx = new Dropbox({
-		accessToken: process.env.DROPBOX_API_TOKEN
+		accessToken: process.env.DROPBOX_API_TOKEN,
+		fetch: fetch
 	});
 	dbx.filesDownload({
 			path: '/labels.csv'
@@ -162,7 +164,8 @@ function getCsv(callback) {
 //Upload to Dropbox the csv file
 function upload_csv(csv_data, callback) {
 	var dbx = new Dropbox({
-		accessToken: process.env.DROPBOX_API_TOKEN
+		accessToken: process.env.DROPBOX_API_TOKEN,
+		fetch: fetch
 	});
 
 	keys = Object.keys(csv_data);
@@ -193,6 +196,7 @@ const timeout = 10;
 
 io.on("connection", (socket) => {
 	console.log("user " + socket.id + " connected !");
+	socket.emit('clearscr');
 
 	users_requests[socket.id] = {
 		'has_requested': true
@@ -203,6 +207,7 @@ io.on("connection", (socket) => {
 
 	if (server_ready) {
 		users_requests[socket.id].has_requested = true;
+		socket.emit('loading');
 		getCsv((csv_data, b) => {
 			getAudioFiles(csv_data, (audio_binaries) => {
 				data_is_ready = true;
@@ -211,6 +216,9 @@ io.on("connection", (socket) => {
 			});
 			data_for_voter = csv_data;
 		});
+		setTimeout(() => {
+			users_requests[socket.id].has_requested = false;
+		}, timeout * 1000);
 	} else {
 		socket.emit('wait');
 	}
@@ -226,6 +234,9 @@ io.on("connection", (socket) => {
 				});
 				data_for_voter = csv_data;
 			});
+			setTimeout(() => {
+				users_requests[socket.id].has_requested = false;
+			}, timeout * 1000);
 		} else {
 			socket.emit('wait');
 		}
