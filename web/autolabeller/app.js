@@ -44,6 +44,10 @@ server.listen(app.get("port"), () => {
 	setInterval(() => {
 		upload_csv(data, () => {
 			console.log('data uploaded');
+			getCsv((a, fulldata) => {
+				data = fulldata;
+				console.log('data updated');
+			});
 		});
 	}, 5 * 1000 * 60);
 });

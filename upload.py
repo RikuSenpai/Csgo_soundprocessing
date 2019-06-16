@@ -5,6 +5,7 @@ import argparse
 import os
 import datetime
 import csv
+import numpy as np
 
 
 def setup_parser():
@@ -110,10 +111,10 @@ if __name__ == "__main__":
 				if not failed:
 					stop = time.time()
 					success += 1
-					upload_duration.append(start-stop)
+					upload_duration.append(stop-start)
 					os.remove(tmp_dir + audiofile)
-			print('{} estimated duration'.format(estimate_duration(
-				len(files) - success + failure, upload_duration)))
+			print('estimated duration: {:.4f}m'.format(estimate_duration(
+				len(files) - success + failure, upload_duration)/60))
 		if failed:
 			print('retrying to upload ...')
 	# Cleaning
