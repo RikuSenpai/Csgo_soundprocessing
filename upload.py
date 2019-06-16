@@ -91,12 +91,12 @@ if __name__ == "__main__":
 						'/Not_Labeled/{}'.format(audiofile)).server_modified)
 					append_csv_and_upload(dbx, tmp_dir, audiofile,
 										(i+1 == len(files)-1))
-					os.remove(tmp_dir + audiofile)
 					failed = False
 				except Exception as err:
 					print('[{}] failed to upload |'.format(i), err)
 					failed = True
-
+				if not failed:
+					os.remove(tmp_dir + audiofile)
 	# Cleaning
 	os.rmdir(tmp_dir)
 
