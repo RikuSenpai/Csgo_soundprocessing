@@ -1,3 +1,4 @@
+import time
 from sound_processing.process import SoundProcessor
 import dropbox
 import argparse
@@ -46,6 +47,10 @@ def append_csv_and_upload(dbx, tmp_dir: str, audiofile: str, upload: bool = True
 		os.remove(tmp_dir + filename)
 
 
+def estimate_duration(nb_files, upload_duration):
+	return nb_files*np.mean(upload_duration)
+
+
 if __name__ == "__main__":
 	parser = setup_parser()
 	args = parser.parse_args()
@@ -65,6 +70,7 @@ if __name__ == "__main__":
 	filename = get_filename()
 
 	processor = SoundProcessor()
+	upload_duration = list()
 
 	# Create audio splits
 	print('splitting audio ...')
@@ -78,25 +84,38 @@ if __name__ == "__main__":
 
 	# Upload to dropbox
 	print('uploading splits ...')
-	files = os.listdir(tmp_dir)
 	failed = True
 	while failed:
+		failure = 0
+		success = 0
+		files = os.listdir(tmp_dir)
+		print('{} files to upload'.format(len(files)))
 		for i, audiofile in enumerate(files):
 			if audiofile != 'labels.csv':
 				try:
+					start = time.time()
 					with open(tmp_dir + audiofile, 'rb') as f:
 						dbx.files_upload(
 							f.read(), '/Not_Labeled/{}'.format(audiofile))
 					print(dbx.files_get_metadata(
 						'/Not_Labeled/{}'.format(audiofile)).server_modified)
 					append_csv_and_upload(dbx, tmp_dir, audiofile,
-										(i+1 == len(files)-1))
+										  (i+1 == len(files)-1))
 					failed = False
 				except Exception as err:
-					print('[{}] failed to upload |'.format(i), err)
+					print('[{}][{}] failed to upload |'.format(
+						i, audiofile), err)
 					failed = True
+					failure += 1
 				if not failed:
+					stop = time.time()
+					success += 1
+					upload_duration.append(start-stop)
 					os.remove(tmp_dir + audiofile)
+			print('{} estimated duration'.format(estimate_duration(
+				len(files) - success + failure, upload_duration)))
+		if failed:
+			print('retrying to upload ...')
 	# Cleaning
 	os.rmdir(tmp_dir)
 
