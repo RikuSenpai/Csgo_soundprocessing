@@ -79,19 +79,23 @@ if __name__ == "__main__":
 	# Upload to dropbox
 	print('uploading splits ...')
 	files = os.listdir(tmp_dir)
-	for i, audiofile in enumerate(files):
-		if audiofile != 'labels.csv':
-			try:
-				with open(tmp_dir + audiofile, 'rb') as f:
-					dbx.files_upload(
-						f.read(), '/Not_Labeled/{}'.format(audiofile))
-			except Exception as err:
-				print('[{}] failed to upload |'.format(i), err)
-			print(dbx.files_get_metadata(
-				'/Not_Labeled/{}'.format(audiofile)).server_modified)
-			append_csv_and_upload(dbx, tmp_dir, audiofile,
-								  (i+1 == len(files)-1))
-			os.remove(tmp_dir + audiofile)
+	failed = True
+	while failed:
+		for i, audiofile in enumerate(files):
+			if audiofile != 'labels.csv':
+				try:
+					with open(tmp_dir + audiofile, 'rb') as f:
+						dbx.files_upload(
+							f.read(), '/Not_Labeled/{}'.format(audiofile))
+					print(dbx.files_get_metadata(
+						'/Not_Labeled/{}'.format(audiofile)).server_modified)
+					append_csv_and_upload(dbx, tmp_dir, audiofile,
+										(i+1 == len(files)-1))
+					os.remove(tmp_dir + audiofile)
+					failed = False
+				except Exception as err:
+					print('[{}] failed to upload |'.format(i), err)
+					failed = True
 
 	# Cleaning
 	os.rmdir(tmp_dir)
